@@ -25,22 +25,24 @@ def t(text: str) -> str:
         return text
 
     data = _load_lang(lang)
-    #st.text(text)
+    #st.text(f"Idioma seleccionado: {lang}")
     return data.get(text, text)
 
 def language_selector(label: str = ":material/language: Idioma / Language", default: str = "es"):
     """Selector de idioma persistente en la barra lateral."""
-    languages = {"Español": "es", "English": "en", "Português": "pt"}
+    languages = {"Español": "es", "English": "en", "Português": "pt", "Français": "fr"}
 
     if "lang" not in st.session_state:
         st.session_state["lang"] = default
 
+    lang = st.session_state["lang"]
+    #st.text(f"Ultimo Idioma seleccionado: {st.session_state['lang']}")
+    
     choice = st.sidebar.selectbox(
         label,
         list(languages.keys()),
-        index=list(languages.values()).index(st.session_state["lang"])
-        if st.session_state["lang"] in languages.values() else 0
+        index=list(languages.values()).index(lang),
+        key="lang_selector"
     )
-
     st.session_state["lang"] = languages[choice]
     return st.session_state["lang"]

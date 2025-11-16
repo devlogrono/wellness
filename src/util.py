@@ -51,9 +51,9 @@ def clean_df(records):
     ]
     
     # --- eliminar columnas si existen ---
-    df_filtrado = records.drop(columns=[col for col in columnas_excluir if col in records.columns])
+    df_traducido = records.drop(columns=[col for col in columnas_excluir if col in records.columns])
 
-    cols = list(df_filtrado.columns)
+    #cols = list(df_filtrado.columns)
 
     # # 2️⃣ Crear un diccionario de renombre limpio → traducido
     # rename_dict = {
@@ -114,7 +114,6 @@ def ordenar_df(df: pd.DataFrame, columna: str, ascendente: bool = True) -> pd.Da
     # Hacer que los índices comiencen desde 1
     df_ordenado.index = df_ordenado.index + 1
     return df_ordenado
-
 
 def calcular_edad(fecha_nac):
     try:
