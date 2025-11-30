@@ -86,7 +86,14 @@ def load_ausencias_activas_db(activas: bool = True):
 
         cursor.execute(query)
         rows = cursor.fetchall()
-        return pd.DataFrame(rows)
+        df =  pd.DataFrame(rows)
+    
+        if st.session_state["auth"]["rol"].lower() == "developer":
+            df = df[df["usuario"]=="developer"]
+        else:
+            df = df[df["usuario"]!="developer"]
+
+        return df
 
     except Exception as e:
         st.error(f":material/error: Error cargando ausencias: {e}")
