@@ -260,9 +260,11 @@ def selection_header_registro(jug_df: pd.DataFrame, comp_df: pd.DataFrame, recor
     # 2. Turno seleccionado
     # ======================
     with col_turno:
+        opciones = list(OPCIONES_TURNO.values())[1:]   # ← excluye la primera opción
+
         turno_traducido = st.selectbox(
             t("Turno"),
-            list(OPCIONES_TURNO.values()),
+            opciones,
             index=0
         )
         turno = next(k for k, v in OPCIONES_TURNO.items() if v == turno_traducido)
