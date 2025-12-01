@@ -87,11 +87,12 @@ def load_ausencias_activas_db(activas: bool = True):
         cursor.execute(query)
         rows = cursor.fetchall()
         df =  pd.DataFrame(rows)
-    
-        if st.session_state["auth"]["rol"].lower() == "developer":
-            df = df[df["usuario"]=="developer"]
-        else:
-            df = df[df["usuario"]!="developer"]
+
+        if not df.empty:
+            if st.session_state["auth"]["rol"].lower() == "developer":
+                df = df[df["usuario"]=="developer"]
+            else:
+                df = df[df["usuario"]!="developer"]
 
         return df
 
