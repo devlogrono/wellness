@@ -3,8 +3,8 @@ import streamlit as st
 from src.auth_system.auth_core import init_app_state, validate_login
 from src.auth_system.auth_ui import login_view, menu
 
-from src.db.db_records import get_records_db, load_jugadoras_db
-
+from src.db.db_records import get_records_db, load_jugadoras_db, load_ausencias_activas_db
+from src.ui.absents_ui import filtrar_jugadoras_disponibles
 from src.util import clean_df, data_format
 from src.ui.ui_app import (
     get_default_period,
@@ -47,6 +47,7 @@ if df.empty:
 df = data_format(df)
 jug_df = load_jugadoras_db()
 jug_df = jug_df[jug_df["plantel"] == "1FF"]
+ausencias_df = load_ausencias_activas_db()
 
 # ============================================================
 # INTERFAZ PRINCIPAL
@@ -110,7 +111,9 @@ with tabs[1]:
     st.dataframe(clean_df(df_periodo), hide_index=True)
 with tabs[2]:
 
-    pendientes_in, pendientes_out = get_pendientes_check(df_periodo, jug_df)
+    jug_df_sin_ausencia = filtrar_jugadoras_disponibles(jug_df, ausencias_df)
+
+    pendientes_in, pendientes_out = get_pendientes_check(df_periodo, jug_df_sin_ausencia)
 
     col1, col2 = st.columns(2)
     with col1:
