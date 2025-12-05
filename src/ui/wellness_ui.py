@@ -2,7 +2,7 @@ import streamlit as st
 import time
 
 from src.schema import new_base_record
-from src.ui.checkin_ui import checkin_form
+from src.ui.check_in_ui import checkin_form
 from src.ui.check_out_ui import checkout_form
 from src.i18n.i18n import t
 from src.ui.ui_components import preview_record
@@ -64,13 +64,6 @@ def wellness_form(jugadora, tipo, turno):
         record, is_valid, validation_msg = checkout_form(record)
 
     # ---------------------------------------
-    # 5. Validaciones del formulario
-    # ---------------------------------------
-    if not is_valid and validation_msg:
-        st.error(validation_msg)
-        st.stop()
-
-    # ---------------------------------------
     # 6. Previsualización para developers
     # ---------------------------------------
     if st.session_state["auth"]["rol"].lower() == "developer":
@@ -83,12 +76,19 @@ def wellness_form(jugadora, tipo, turno):
     # ---------------------------------------
     submitted = st.button(
         t("Guardar"),
-        disabled=not is_valid,
+        #disabled=not is_valid,
         type="primary"
     )
 
     if submitted:
         try:
+            # ---------------------------------------
+            # 5. Validaciones del formulario
+            # ---------------------------------------
+            if not is_valid and validation_msg:
+                st.error(validation_msg)
+                st.stop()
+
             with st.spinner(t("Actualizando Registro...")):
 
                 modo = "checkin" if tipo == "Check-in" else "checkout"

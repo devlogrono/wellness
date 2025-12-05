@@ -24,20 +24,21 @@ def compute_player_wellness_means(df_in_period_checkin: pd.DataFrame) -> pd.Data
     Devuelve por nombre_jugadora:
       - prom_w_1_5: promedio (1-5) de las 5 variables wellness
       - dolor_mean: promedio de dolor (1-5)
-      - en_riesgo: bool con la lógica consensuada
+      - en_riesgo: bool con la lógica consensuada (escala 1 = mejor, 5 = peor)
     Solo usa registros tipo 'checkin' del periodo filtrado.
     """
     if df_in_period_checkin.empty:
         return pd.DataFrame(columns=["nombre_jugadora", "prom_w_1_5", "dolor_mean", "en_riesgo"])
 
     df = df_in_period_checkin.copy()
-    #df["nombre_jugadora"] = (df["nombre"].fillna("") + " " + df["apellido"].fillna("")).str.strip()
-    df = _coerce_numeric(df, W_COLS)
+    df = _coerce_numeric(df, W_COLS)  # W_COLS = ["recuperacion","energia","sueno","stress","dolor"]
 
     g = df.groupby("nombre_jugadora", as_index=False)[W_COLS].mean(numeric_only=True)
     g["prom_w_1_5"] = g[W_COLS].mean(axis=1, skipna=True)
     g["dolor_mean"] = g["dolor"]
-    g["en_riesgo"] = (g["prom_w_1_5"] * 5 < 15) | (g["dolor_mean"] > 3)
+
+    # 🔴 Riesgo con escala actual: 1 = mejor, 5 = peor
+    g["en_riesgo"] = (g["prom_w_1_5"] > 3) | (g["dolor_mean"] > 3)
 
     return g[["nombre_jugadora", "prom_w_1_5", "dolor_mean", "en_riesgo"]]
 
@@ -453,13 +454,14 @@ def generar_resumen_periodo(df: pd.DataFrame):
 
     resumen = resumen.fillna(0) 
     resumen.index = resumen.index + 1
+
     # ======================================================
     # 🎨 Colores y estilos
     # ======================================================
     def color_por_variable(col):
         if col.name not in ["Recuperación", "Energía", "Sueño", "Estrés", "Dolor"]:
             return [""] * len(col)
-        cmap = WELLNESS_COLOR_INVERTIDO if col.name in ["Estrés", "Dolor"] else WELLNESS_COLOR_NORMAL
+        #cmap = WELLNESS_COLOR_INVERTIDO if col.name in ["Estrés", "Dolor"] else WELLNESS_COLOR_NORMAL
         return [
             f"background-color:{get_color_wellness(v, col.name)}; color:white; text-align:center; font-weight:bold;"
             if pd.notna(v) else ""
@@ -468,9 +470,18 @@ def generar_resumen_periodo(df: pd.DataFrame):
 
     def color_promedios(col):
         return [
-            "background-color:#27AE60; color:white; text-align:center; font-weight:bold;" if pd.notna(v) and v >= 4 else
-            "background-color:#F1C40F; color:black; text-align:center; font-weight:bold;" if pd.notna(v) and 3 <= v < 4 else
-            "background-color:#E74C3C; color:white; text-align:center; font-weight:bold;" if pd.notna(v) and v < 3 else
+            # 1-2 = bueno
+            "background-color:#27AE60; color:white; text-align:center; font-weight:bold;"
+                if pd.notna(v) and v < 3 else
+
+            # 3 = medio
+            "background-color:#F1C40F; color:black; text-align:center; font-weight:bold;"
+                if pd.notna(v) and v == 3 else
+
+            # 4-5 = malo
+            "background-color:#E74C3C; color:white; text-align:center; font-weight:bold;"
+                if pd.notna(v) and v > 3 else
+
             ""
             for v in col
         ]
@@ -486,9 +497,14 @@ def generar_resumen_periodo(df: pd.DataFrame):
 
     def color_riesgo(col):
         return [
-            "background-color:#E53935; color:white; text-align:center; font-weight:bold;" if v == "Sí" else ""
+            "background-color:#E53935; color:white; text-align:center; font-weight:bold;"  # rojo fuerte
+                if v == "Sí" else
+            "background-color:#27AE60; color:white; text-align:center; font-weight:bold;"  # verde
+                if v == "No" else
+            ""
             for v in col
         ]
+
 
     # ======================================================
     # Mostrar tabla final
@@ -526,7 +542,7 @@ def generar_resumen_periodo(df: pd.DataFrame):
     #     "Este criterio combina el **riesgo global** (fatiga / bienestar bajo) y el **riesgo localizado** (molestias o dolor elevado)."
     # )
 
-    st.caption(t(":material/info: **Criterio de riesgo en la tabla:** una jugadora se considera *en riesgo* si el **promedio de bienestar (1-5x5) < 15 puntos** o si la variable **Dolor > 3**. Este criterio combina el **riesgo global** (fatiga / bienestar bajo) y el **riesgo localizado** (molestias o dolor elevado)."))
+    #st.caption(t(":material/info: **Criterio de riesgo en la tabla:** una jugadora se considera *en riesgo* si el **promedio de bienestar (1-5x5) < 15 puntos** o si la variable **Dolor > 3**. Este criterio combina el **riesgo global** (fatiga / bienestar bajo) y el **riesgo localizado** (molestias o dolor elevado)."))
 
 
 def _filtrar_pendientes(df_periodo: pd.DataFrame, df_jugadoras: pd.DataFrame, tipo: str) -> pd.DataFrame:

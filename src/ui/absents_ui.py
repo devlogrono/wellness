@@ -5,7 +5,21 @@ import time
 from src.db.db_records import insert_absence, delete_absences
 from src.i18n.i18n import t
 
-def filtrar_jugadoras_disponibles(jug_df, ausencias_df):
+def get_checkins(records_df, fecha):
+    """Devuelve array de id_jugadora con CHECK-IN en la fecha y turno indicados."""
+    return records_df[
+        (records_df["tipo"] == "checkin") &
+        (records_df["fecha_sesion"] == fecha)
+    ]["id_jugadora"].unique()
+
+def get_checkouts(records_df, fecha):
+    """Devuelve array de id_jugadora con CHECK-OUT en la fecha y turno indicados."""
+    return records_df[
+        (records_df["tipo"] == "checkout") &
+        (records_df["fecha_sesion"] == fecha)
+    ]["id_jugadora"].unique()
+
+def filtrar_jugadoras_ausentes(jug_df, ausencias_df):
 
     # Jugadoras del plantel seleccionado
     #jugadoras_plantel = jug_df[jug_df["plantel"] == codigo_plantel]
@@ -24,8 +38,44 @@ def filtrar_jugadoras_disponibles(jug_df, ausencias_df):
 
     return disponibles
 
-def absents_form(comp_df, jug_df, tipo_ausencia_df, ausencias_df):
-    #st.markdown(":material/event_busy: Registrar ausencia")
+def filtrar_jugadoras_disponibles(jug_df, ausencias_df, wellness_df):
+
+    hoy = datetime.date.today()
+
+    # Listas de jugadoras que han registrado algo hoy
+    checkins = get_checkins(wellness_df, hoy)
+    checkouts = get_checkouts(wellness_df, hoy)
+
+    jugadoras_con_registro = set(checkins) | set(checkouts)   # unión de ambas
+
+    # Si no hay ausencias → retornar jugadoras sin registros
+    if ausencias_df is None or ausencias_df.empty:
+        # devolvemos solo las jugadoras que NO tienen ningún registro
+        return jug_df[
+            ~jug_df["id_jugadora"].isin(jugadoras_con_registro)
+        ]
+
+    # Jugadoras marcadas como ausentes en la base
+    ausentes_hoy = set(ausencias_df["id_jugadora"].unique())
+
+    # 🔥 CORRECCIÓN CRÍTICA:
+    # Jugadoras con registro NO pueden ser ausentes
+    ausentes_filtrados = ausentes_hoy - jugadoras_con_registro
+
+    # Jugadoras disponibles = todas menos las ausentes REALES
+    disponibles = jug_df[
+        ~jug_df["id_jugadora"].isin(ausentes_filtrados)
+    ]
+
+    # Ahora filtramos las que YA hicieron ambos check-ins/check-outs (no deben aparecer)
+    disponibles_sin_registro_hoy = disponibles[
+        ~disponibles["id_jugadora"].isin(jugadoras_con_registro)
+    ]
+
+    return disponibles_sin_registro_hoy
+
+@st.fragment
+def checkout_inputs(comp_df, jug_df, tipo_ausencia_df, ausencias_df, wellness_df):
 
     # --- Fila principal de filtros ---
     col1, col2, col3 = st.columns([1.5, 1.5, 1])
@@ -46,7 +96,7 @@ def absents_form(comp_df, jug_df, tipo_ausencia_df, ausencias_df):
 
             codigo_comp = competicion["codigo"]
 
-            jugadoras_disponibles_df = filtrar_jugadoras_disponibles(jug_df, ausencias_df)
+            jugadoras_disponibles_df = filtrar_jugadoras_disponibles(jug_df, ausencias_df, wellness_df)
 
             jug_df_filtrado = jugadoras_disponibles_df[jugadoras_disponibles_df["plantel"] == codigo_comp]
             jugadoras_options = jug_df_filtrado.to_dict("records")
@@ -136,6 +186,9 @@ def absents_form(comp_df, jug_df, tipo_ausencia_df, ausencias_df):
             st.success(t(":material/done_all: Registro guardado/actualizado correctamente."))
             time.sleep(4)
             st.rerun()
+
+def absents_form(comp_df, jug_df, tipo_ausencia_df, ausencias_df, wellness_df):
+    checkout_inputs(comp_df, jug_df, tipo_ausencia_df, ausencias_df, wellness_df)
 
 def absents_summary(records):
     #st.markdown(":material/event_busy: Ausencias registradas")
