@@ -230,6 +230,8 @@ def logout() -> None:
       - limpia st.session_state['auth']
       - si coincide con active_auth_key, también la limpia
     """
+    #del st.session_state["id_tipo_carga"]
+    #st.session_state.clear()
     ensure_session_defaults()
     auth_state = st.session_state["auth"]
     cookie_key = auth_state.get("cookie_key")

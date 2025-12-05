@@ -49,7 +49,9 @@ def new_base_record(id_jugadora: str, username: str, tipo: str) -> dict:
         "sueno": None,
         "stress": None,
         "dolor": None,
-        "partes_cuerpo_dolor": [],
+        "id_zona_segmento_dolor": None,
+        "zonas_anatomicas_dolor": [],
+        "lateralidad": None,
         # Check-out fields
         "minutos_sesion": None,
         "rpe": None,
