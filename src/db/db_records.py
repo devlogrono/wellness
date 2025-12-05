@@ -336,7 +336,7 @@ def upsert_wellness_record_db(record: dict, modo: str = "checkin") -> bool:
         if isinstance(fecha_sesion, str):
             fecha_sesion = datetime.date.fromisoformat(fecha_sesion)
 
-        partes_json = json.dumps(record.get("partes_cuerpo_dolor", []), ensure_ascii=False)
+        #partes_json = json.dumps(record.get("partes_cuerpo_dolor", []), ensure_ascii=False)
 
         # ============================================================
         # 🔹 Verificar si ya existe el registro
@@ -400,7 +400,9 @@ def upsert_wellness_record_db(record: dict, modo: str = "checkin") -> bool:
                         sueno = %(sueno)s,
                         stress = %(stress)s,
                         dolor = %(dolor)s,
-                        partes_cuerpo_dolor = %(partes_cuerpo_dolor)s,
+                        id_zona_segmento_dolor = %(id_zona_segmento_dolor)s,
+                        zonas_anatomicas_dolor = CAST(%(zonas_anatomicas_dolor)s AS JSON),
+                        lateralidad_dolor = %(lateralidad)s,
                         minutos_sesion = %(minutos_sesion)s,
                         rpe = %(rpe)s,
                         ua = %(ua)s,
@@ -411,7 +413,7 @@ def upsert_wellness_record_db(record: dict, modo: str = "checkin") -> bool:
                     WHERE id = %(id)s;
                 """
                 params = dict(record)
-                params["partes_cuerpo_dolor"] = partes_json
+                #params["partes_cuerpo_dolor"] = partes_json
                 params["id"] = existing["id"]
 
             # --- Logging modo developer ---
@@ -436,19 +438,19 @@ def upsert_wellness_record_db(record: dict, modo: str = "checkin") -> bool:
                 INSERT INTO wellness (
                     id_jugadora, fecha_sesion, tipo, turno, periodizacion_tactica,
                     id_tipo_carga, id_tipo_readaptacion, recuperacion, fatiga, sueno,
-                    stress, dolor, partes_cuerpo_dolor, minutos_sesion, rpe, ua,
+                    stress, dolor, id_zona_segmento_dolor, zonas_anatomicas_dolor, lateralidad_dolor, minutos_sesion, rpe, ua,
                     en_periodo, observacion, usuario
                 ) VALUES (
                     %(id_jugadora)s, %(fecha_sesion)s, %(tipo)s, %(turno)s, %(periodizacion_tactica)s,
                     %(id_tipo_carga)s, %(id_tipo_readaptacion)s, %(recuperacion)s, %(fatiga)s, %(sueno)s,
-                    %(stress)s, %(dolor)s, %(partes_cuerpo_dolor)s, %(minutos_sesion)s, %(rpe)s, %(ua)s,
+                    %(stress)s, %(dolor)s, %(id_zona_segmento_dolor)s, CAST(%(zonas_anatomicas_dolor)s AS JSON), %(lateralidad)s, %(minutos_sesion)s, %(rpe)s, %(ua)s,
                     %(en_periodo)s, %(observacion)s, %(usuario)s
                 );
             """
 
             params = dict(record)
             params["fecha_sesion"] = fecha_sesion
-            params["partes_cuerpo_dolor"] = partes_json
+            #params["partes_cuerpo_dolor"] = partes_json
 
             if st.session_state["auth"]["rol"].lower() == "developer":
                 st.write("🟢 Query INSERT ejecutada:")

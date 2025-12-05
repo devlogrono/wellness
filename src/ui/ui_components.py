@@ -4,6 +4,7 @@ import datetime
 from src.util import get_date_range_input
 from src.i18n.i18n import t
 from src.schema import OPCIONES_TURNO
+import json
 
 def selection_header(jug_df: pd.DataFrame, comp_df: pd.DataFrame, records_df: pd.DataFrame = None, modo: str = "registro") -> pd.DataFrame:
     """
@@ -97,39 +98,6 @@ def selection_header(jug_df: pd.DataFrame, comp_df: pd.DataFrame, records_df: pd
         start=start,
         end=end,
     )
-
-    # df_filtrado = records_df.copy()
-    # if not df_filtrado.empty:
-    #     # Filtrar por competición (plantel)
-    #     #if competicion and "codigo" in competicion:
-    #     #    df_filtrado = df_filtrado[df_filtrado["plantel"] == competicion["codigo"]]
-
-    #     # Filtrar por jugadora seleccionada
-    #     if jugadora_opt:
-    #         df_filtrado = df_filtrado[df_filtrado["id_jugadora"] == jugadora_opt["id_jugadora"]]
-
-    #     # Filtrar por turno
-    #     if turno != "Todos":
-    #         df_filtrado = df_filtrado[df_filtrado["turno"] == turno]
-
-    #     # Filtrar por tipo o fechas
-    #     if modo == "registros" and tipo:
-    #         df_filtrado = df_filtrado[df_filtrado["tipo"].str.lower() == tipo.lower()]
-    #     elif modo == "reporte" and start and end:
-    #         # Asegurar que fecha_sesion y start/end sean del mismo tipo (date)
-    #         if pd.api.types.is_datetime64_any_dtype(df_filtrado["fecha_sesion"]):
-    #             df_filtrado["fecha_sesion"] = df_filtrado["fecha_sesion"].dt.date
-    #         if hasattr(start, "to_pydatetime"):
-    #             start = start.date()
-    #         if hasattr(end, "to_pydatetime"):
-    #             end = end.date()
-    #         df_filtrado = df_filtrado[
-    #             (df_filtrado["fecha_sesion"] >= start) & (df_filtrado["fecha_sesion"] <= end)
-    #         ]
-    
-    # print(df_filtrado["fecha_sesion"].head())
-    # print(df_filtrado["fecha_sesion"].dtype)
-    # print(type(df_filtrado["fecha_sesion"].iloc[0]))
 
     return df_filtrado, jugadora_opt, tipo, turno, start, end
 
@@ -296,24 +264,8 @@ def selection_header_registro(jug_df: pd.DataFrame, comp_df: pd.DataFrame, recor
             records_df["turno"] = records_df["turno"].astype(str).str.lower()
 
             hoy = datetime.date.today()
-
-            # ---------------------------
-            # Jugadoras con CHECK-IN hoy
-            # ---------------------------
-            checkins = records_df[
-                (records_df["tipo"] == "checkin") &
-                (records_df["turno"] == turno.lower()) &
-                (records_df["fecha_sesion"] == hoy)
-            ]["id_jugadora"].unique()
-
-            # ---------------------------
-            # Jugadoras con CHECK-OUT hoy
-            # ---------------------------
-            checkouts = records_df[
-                (records_df["tipo"] == "checkout") &
-                (records_df["turno"] == turno.lower()) &
-                (records_df["fecha_sesion"] == hoy)
-            ]["id_jugadora"].unique()
+            checkins = get_checkins(records_df, turno, hoy)
+            checkouts = get_checkouts(records_df, turno, hoy)
 
             # ======================================================
             # LÓGICA PRINCIPAL
@@ -350,6 +302,22 @@ def selection_header_registro(jug_df: pd.DataFrame, comp_df: pd.DataFrame, recor
 
     return jugadora_opt, tipo, turno
 
+def get_checkins(records_df, turno: str, fecha):
+    """Devuelve array de id_jugadora con CHECK-IN en la fecha y turno indicados."""
+    return records_df[
+        (records_df["tipo"] == "checkin") &
+        (records_df["turno"] == turno.lower()) &
+        (records_df["fecha_sesion"] == fecha)
+    ]["id_jugadora"].unique()
+
+
+def get_checkouts(records_df, turno: str, fecha):
+    """Devuelve array de id_jugadora con CHECK-OUT en la fecha y turno indicados."""
+    return records_df[
+        (records_df["tipo"] == "checkout") &
+        (records_df["turno"] == turno.lower()) &
+        (records_df["fecha_sesion"] == fecha)
+    ]["id_jugadora"].unique()
 
 def preview_record(record: dict) -> None:
     #st.subheader("Previsualización")
@@ -360,6 +328,4 @@ def preview_record(record: dict) -> None:
     tipo = record.get("tipo", "-")
     st.markdown(f"**Jugadora:** {jug}  |  **Fecha:** {fecha}  |  **Turno:** {turno}  |  **Tipo:** {tipo}")
     with st.expander("Ver registro JSON", expanded=True):
-        import json
-
         st.code(json.dumps(record, ensure_ascii=False, indent=2), language="json")

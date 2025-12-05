@@ -39,14 +39,17 @@ WELLNESS_COLOR_INVERTIDO = {
 # --- Funciones utilitarias ---
 def get_color_wellness(valor: float | int | None, variable: str) -> str:
     """
-    Devuelve el color correspondiente para una variable Wellness (1–5)
-    según la escala normal o invertida.
+    Devuelve el color correspondiente para cualquier variable Wellness (1-5)
+    usando siempre la escala invertida:
+    1 = verde (mejor), 5 = rojo (peor)
     """
     if valor is None:
-        return WELLNESS_COLOR_NORMAL[3]  # neutro
+        return WELLNESS_COLOR_INVERTIDO[3]  # color neutro
+
     try:
         v = int(round(float(valor)))
     except Exception:
-        v = 3
-    cmap = WELLNESS_COLOR_INVERTIDO if variable in ["Estrés", "Dolor"] else WELLNESS_COLOR_NORMAL
-    return cmap.get(v, WELLNESS_COLOR_NORMAL[3])
+        v = 3  # valor neutro
+
+    return WELLNESS_COLOR_INVERTIDO.get(v, WELLNESS_COLOR_INVERTIDO[3])
+
