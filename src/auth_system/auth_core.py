@@ -7,9 +7,12 @@ import jwt
 import streamlit as st
 
 from src.auth_system import auth_config
-from src.components.cookie_manager.cookie_manager import CookieManager
+from src.cookie_manager import cookie_set, cookie_get, cookie_delete
 
-cookie = CookieManager()
+import time
+# ======================================================
+# Helpers internos de estado
+# ======================================================
 
 def _auth_default_state():
     return {
@@ -30,10 +33,9 @@ def ensure_state():
 def init_app_state():
     ensure_state()
 
-
-# ============================
+# ======================================================
 # JWT
-# ============================
+# ======================================================
 
 def create_jwt(username, rol, session_id=None):
     if session_id is None:
@@ -55,93 +57,184 @@ def create_jwt(username, rol, session_id=None):
 
 def decode_jwt(token):
     try:
-        payload = jwt.decode(token, auth_config.JWT_SECRET, algorithms=[auth_config.JWT_ALGORITHM])
-        return payload
+        return jwt.decode(token, auth_config.JWT_SECRET, algorithms=[auth_config.JWT_ALGORITHM])
     except jwt.ExpiredSignatureError:
-        st.warning("Sesión expirada. Vuelve a iniciar sesión.")
+        st.warning("Tu sesión ha expirado. Vuelve a iniciar sesión.")
         return None
     except Exception:
         return None
 
 
-# ============================
-# Manejo de sesión
-# ============================
+# ======================================================
+# BOOTSTRAP: Recuperar sesión desde cookie (doble ciclo)
+# ======================================================
 
-def set_auth_session(user, token, payload):
-    st.session_state["auth"].update({
-        "is_logged_in": True,
-        "username": payload["user"],
-        "rol": payload["rol"],
-        "token": token,
-        "session_id": payload["sid"],
-        "nombre": f"{user.get('name','')} {user.get('lastname','')}".strip()
-    })
+def bootstrap_auth_from_cookie():
+    """
+    Proceso en 2 ciclos para restaurar sesión desde cookie
+    y manejar logout sin errores.
+    """
 
-    # Guardar cookie real del navegador
-    cookie.set(auth_config.COOKIE_NAME, token, days=auth_config.COOKIE_EXP_DAYS)
-
-
-def get_current_user():
     ensure_state()
 
-    # 1: si hay token en memoria, validarlo
+    #st.text("Inicializando autenticación...")
+
+    # =====================================================
+    # (A) MANEJO DE LOGOUT EN 2 CICLOS - DEBE IR PRIMERO
+    # =====================================================
+    if st.session_state.get("_logout_pending"):
+
+        #st.text("Logout pendiente, verificando cookie...")
+
+        # Preguntar si la cookie sigue existiendo
+        token = cookie_get(auth_config.COOKIE_NAME)
+        #st.text(f"DEBUG logout → cookie_get devuelve: {token}")
+
+        # CICLO 1 después del logout: el iframe aún no procesó el delete
+        if token:
+            st.text("Cookie aún existe, esperando siguiente ciclo...")
+            st.stop()
+
+        # CICLO 2: cookie YA fue eliminada
+        #st.text("Cookie eliminada. Limpiando sesión...")
+
+        st.session_state["_logout_pending"] = False
+        st.session_state["auth"] = _auth_default_state()
+        st.session_state["_auth_bootstrap_done"] = True
+        st.session_state["_auth_cookie_checked"] = False
+
+        #st.text("Logout completado.")
+        return
+
+    # =====================================================
+    # (B) FLUJO NORMAL DE BOOTSTRAP
+    # =====================================================
+
+    # Si ya se ejecutó bootstrap, no repetir
+    if st.session_state.get("_auth_bootstrap_done"):
+        #st.text("Bootstrap ya completado previamente.")
+        return
+
+    # Pedimos la cookie (primer ciclo devuelve None)
+    cookie_token = cookie_get(auth_config.COOKIE_NAME)
+    #st.text(f"DEBUG cookie_token: {cookie_token}, name: {auth_config.COOKIE_NAME}")
+
+    # Primer ciclo: el componente aún no devolvió cookie
+    if not cookie_token and not st.session_state.get("_auth_cookie_checked"):
+        st.session_state["_auth_cookie_checked"] = True
+        #st.text("Primer ciclo: esperando cookie del componente...")
+        st.stop()
+
+    # Segundo ciclo: ahora sí debería existir valor
+    if isinstance(cookie_token, str) and cookie_token.strip():
+        payload = decode_jwt(cookie_token)
+        if payload:
+            st.session_state["auth"].update({
+                "is_logged_in": True,
+                "username": payload["user"],
+                "rol": payload["rol"],
+                "token": cookie_token,
+                "session_id": payload["sid"],
+            })
+            #st.text("Sesión restaurada desde cookie")
+
+    # Marcamos que ya hicimos bootstrap
+    st.session_state["_auth_bootstrap_done"] = True
+    #st.text("Bootstrap completado.")
+
+
+# ======================================================
+# get_current_user (YA SIN LEER COOKIES)
+# ======================================================
+
+def get_current_user():
+    """
+    SOLO usa session_state.
+    El bootstrap ya restauró la sesión desde cookie si era necesario.
+    """
+    ensure_state()
+
     token = st.session_state["auth"].get("token")
-    if token:
-        payload = decode_jwt(token)
-        if payload:
-            return payload
-        else:
-            logout()
-            return None
+    if not token:
+        return None
 
-    # 2: leer token desde cookie real del navegador
-    raw = cookie.get(auth_config.COOKIE_NAME)
-    if raw:
-        payload = decode_jwt(raw)
-        if payload:
-            st.session_state["auth"]["token"] = raw
-            st.session_state["auth"]["username"] = payload["user"]
-            st.session_state["auth"]["rol"] = payload["rol"]
-            st.session_state["auth"]["session_id"] = payload["sid"]
-            return payload
+    payload = decode_jwt(token)
+    if not payload:
+        logout()
+        return None
 
-    return None
+    return payload
 
 
 def validate_login():
     return get_current_user() is not None
 
 
+# ======================================================
+# Logout real
+# ======================================================
+
 def logout():
-    """
-    Cierra sesión REAL:
-    - Elimina cookie del navegador
-    - Limpia session_state
-    """
-    cookie.delete(auth_config.COOKIE_NAME)
-    st.session_state["auth"] = _auth_default_state()
-    st.rerun()
+    ensure_state()
+
+    # 1) Marcar que hay un logout en curso
+    st.session_state["_logout_pending"] = True
+
+    # 2) Pedir al componente que borre la cookie en el navegador
+    cookie_delete(auth_config.COOKIE_NAME)
+
+    # 3) Resetear flags de bootstrap para que pueda re-ejecutarse
+    st.session_state["_auth_bootstrap_done"] = False
+    st.session_state["_auth_cookie_checked"] = False
+
+    # 4) Detener aquí este ciclo. El siguiente ciclo lo gestionará bootstrap_auth_from_cookie
+    st.stop()
 
 
-# ============================
-# Login (desde auth_ui)
-# ============================
+
+# ======================================================
+# Login desde auth_ui
+# ======================================================
 
 def validate_access(password, user):
+    """Valida contraseña, permisos y registra la sesión."""
     if not bcrypt.checkpw(password.encode(), user["password_hash"].encode()):
         st.error("Credenciales incorrectas")
         return
 
     permisos = [p.strip() for p in user.get("permissions", "").split(",")]
     if auth_config.APP_NAME not in permisos:
-        st.error("No tienes permiso para usar esta app")
+        st.error("No tienes permiso para acceder a esta app")
         return
 
+    # Crear token
     token = create_jwt(user["email"], user["role_name"])
     payload = decode_jwt(token)
 
-    set_auth_session(user, token, payload)
+    # Registrar sesión en memoria + cookie
+    st.session_state["auth"].update({
+        "is_logged_in": True,
+        "username": payload["user"],
+        "rol": payload["rol"],
+        "token": token,
+        "session_id": payload["sid"],
+        "nombre": f"{user.get('name','')} {user.get('lastname','')}".strip(),
+    })
 
-    st.success("Inicio de sesión exitoso")
-    st.rerun()
+    # Guardar cookie real del navegador
+    cookie_set(auth_config.COOKIE_NAME, token, days=auth_config.COOKIE_EXP_DAYS)
+
+    # # SET
+    # st.write("### 1. SET COOKIE")
+    # cookie_set(auth_config.COOKIE_NAME, token, days=auth_config.COOKIE_EXP_DAYS)
+    # st.success("Cookie creada (MY_COOKIE=Jose123)")
+
+    # time.sleep(5)
+
+    # # GET
+    # st.write("### 2. GET COOKIE")
+    # #value = cookie_get(auth_config.COOKIE_NAME)
+    # #st.write("Valor leído:", value)
+
+    # st.success("Inicio de sesión exitoso")
+    # #st.rerun()
