@@ -85,7 +85,7 @@ def selection_header(jug_df: pd.DataFrame, comp_df: pd.DataFrame, records_df: pd
     # ==================================================
     # 🧮 FILTRADO DEL DATAFRAME
     # ==================================================
-    st.text(t("Filtrando registros..."))
+    #st.text(t("Filtrando registros..."))
     df_filtrado = filtrar_registros(
         records_df,
         jugadora_opt=jugadora_opt,
