@@ -421,10 +421,10 @@ def upsert_wellness_record_db(record: dict, modo: str = "checkin") -> bool:
                 params["id"] = existing["id"]
 
             # --- Logging modo developer ---
-            if st.session_state["auth"]["rol"].lower() == "developer":
-                st.write(f"🟡 Query UPDATE ejecutada (modo={modo.upper()}):")
-                st.code(update_query, language="sql")
-                st.json(params)
+            #if st.session_state["auth"]["rol"].lower() == "developer":
+            st.write(f"🟡 Query UPDATE ejecutada (modo={modo.upper()}):")
+            st.code(update_query, language="sql")
+            st.json(params)
 
             cursor.execute(update_query, params)
             conn.commit()
