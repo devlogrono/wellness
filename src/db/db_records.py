@@ -312,7 +312,7 @@ def upsert_wellness_record_db(record: dict, modo: str = "checkin") -> bool:
         return False
 
     try:
-        usuario_actual = st.session_state["auth"]["name"]
+        usuario_actual = st.session_state["auth"]["name"].lower()
         #user_name = st.session_state["auth"]["name"]
         cursor = conn.cursor(dictionary=True)
 
@@ -329,42 +329,34 @@ def upsert_wellness_record_db(record: dict, modo: str = "checkin") -> bool:
         # 🔹 Verificar si ya existe el registro
         # ============================================================
 
-        if st.session_state["auth"]["rol"].lower() == "developer":
+        # Determinar condición por rol
+        usuario_condition = "usuario = 'developer'" if st.session_state["auth"]["rol"].lower() == "developer" \
+                    else "usuario != 'developer'"
 
-            check_query = """
-                SELECT id FROM wellness
-                WHERE id_jugadora = %s
-                AND fecha_sesion = %s
-                AND turno = %s
-                AND estatus_id <= 2
-                AND usuario = %s
-                LIMIT 1;
-            """
-            params = (
-                record.get("id_jugadora"),
-                fecha_sesion,
-                record.get("turno"),
-                usuario_actual
-            )
-            debug_query = check_query % tuple(repr(p) for p in params)
-            st.text(f"QUERY DEBUG: {debug_query}")
-        else:
-            check_query = """
-                SELECT id FROM wellness
-                WHERE id_jugadora = %s
-                AND fecha_sesion = %s
-                AND turno = %s
-                AND estatus_id <= 2
-                AND usuario != %s
-                LIMIT 1;
-            """
+        check_query = f"""
+            SELECT id FROM wellness
+            WHERE id_jugadora = %s
+            AND fecha_sesion = %s
+            AND turno = %s
+            AND estatus_id <= 2
+            AND {usuario_condition}
+            LIMIT 1;
+        """
+
+        params = (
+            record.get("id_jugadora"),
+            fecha_sesion,
+            record.get("turno")
+        )
+        debug_query = check_query % tuple(repr(p) for p in params)
+        st.text(f"QUERY DEBUG: {debug_query}")
+    
         cursor.execute(
             check_query,
             (
                 record.get("id_jugadora"),
                 fecha_sesion,
-                record.get("turno"),
-                usuario_actual
+                record.get("turno")
             ),
         )
         existing = cursor.fetchone()
@@ -427,10 +419,10 @@ def upsert_wellness_record_db(record: dict, modo: str = "checkin") -> bool:
                 params["id"] = existing["id"]
 
             # --- Logging modo developer ---
-            if st.session_state["auth"]["rol"].lower() == "developer":
-                st.write(f"🟡 Query UPDATE ejecutada (modo={modo.upper()}):")
-                st.code(update_query, language="sql")
-                st.json(params)
+            #if st.session_state["auth"]["rol"].lower() == "developer":
+            st.write(f"🟡 Query UPDATE ejecutada (modo={modo.upper()}):")
+            st.code(update_query, language="sql")
+            st.json(params)
 
             cursor.execute(update_query, params)
             conn.commit()
