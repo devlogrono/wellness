@@ -98,8 +98,7 @@ def wellness_form(jugadora, tipo, turno):
 
                 if success:
                     st.success(t(":material/done_all: Registro guardado/actualizado correctamente."))
-                    time.sleep(4)
-                    #st.rerun()
+                    time.sleep(1)
                     st.session_state["target_page"] = "registro"
                     st.switch_page("pages/switch.py")
                 else:
