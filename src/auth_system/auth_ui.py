@@ -49,7 +49,7 @@ def menu():
 
         st.page_link("app.py", label=t("Inicio"), icon=":material/home:")
         st.subheader(t("Modo :material/dashboard:"))
-        st.page_link("pages/wellness.py", label=t("Registro"), icon=":material/article_person:")
+        st.page_link("pages/registro.py", label=t("Registro"), icon=":material/article_person:")
         st.subheader(t("Análisis y Estadísticas :material/query_stats:"))
         st.page_link("pages/individual.py", label=t("Individual"), icon=":material/accessible_menu:")
         st.page_link("pages/grupal.py", label=t("Grupal"), icon=":material/groups:")
