@@ -1,6 +1,6 @@
 import streamlit.components.v1 as components
 
-from auth_system import auth_config
+from modules.auth_system import auth_config
 
 if auth_config.SERVER_ENV == "prod":
     _cookie_component = components.declare_component(

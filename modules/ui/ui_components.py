@@ -1,16 +1,21 @@
 import pandas as pd
 import streamlit as st
 import datetime
-from util.util import get_date_range_input
-from i18n.i18n import t
-from schema import OPCIONES_TURNO
 import json
+from modules.util.key_builder import KeyBuilder
+from modules.util.util import get_date_range_input
+from modules.i18n.i18n import t
+from modules.schema import OPCIONES_TURNO
+
+from modules.util.key_builder import KeyBuilder
 
 def selection_header(jug_df: pd.DataFrame, comp_df: pd.DataFrame, records_df: pd.DataFrame = None, modo: str = "registro") -> pd.DataFrame:
     """
     Muestra los filtros principales (Competición, Jugadora, Turno, Tipo/Fechas)
     y retorna el DataFrame de registros filtrado según las selecciones.
     """
+
+    kb = KeyBuilder()
 
     col1, col2, col3, col4 = st.columns([3, 2, 1.5, 2])
 
@@ -40,7 +45,8 @@ def selection_header(jug_df: pd.DataFrame, comp_df: pd.DataFrame, records_df: pd
                 format_func=lambda x: x["nombre_jugadora"] if isinstance(x, dict) else "",
                 index=None,
                 placeholder=t("Seleccione una Jugadora"),
-                disabled = disabled_jugadores
+                disabled = disabled_jugadores,
+                key=kb.key("jugadora_selector")
             )
 
             #st.session_state["jugadora_opt"] = jugadora_opt["id_jugadora"] if jugadora_opt else None
@@ -202,19 +208,25 @@ def filtrar_registros(
 
 def selection_header_registro(jug_df: pd.DataFrame, comp_df: pd.DataFrame, records_df: pd.DataFrame = None):
 
+    kb = KeyBuilder()   # ← GENERADOR DE KEYS ÚNICO
+    session_id = st.session_state["client_session_id"]
+    jug_key = f"jugadora_elegida_{session_id}"
+
     col_tipo, col_turno, col_plantel, col_jugadora = st.columns([1.6, 1, 2, 2])
 
     # ==========================================
     # 1. Tipo de registro (Check-in / Check-out)
     # ==========================================
     with col_tipo:
+        opciones_tipo = ["Check-in", "Check-out"]    
         tipo = st.radio(
             t("Tipo de registro"),
-            options=["Check-in", "Check-out"],
+            options=opciones_tipo,
             horizontal=True,
-            index=0
+            index=0, #opciones_tipo.index(st.session_state.get("tipo_registro", "Check-in")),
+            key=kb.key("tipo_registro")
         )
-
+        st.session_state["tipo_registro"] = tipo 
         # tipo = st.selectbox(
         #     t("Tipo de registro"),
         #     ["Check-in", "Check-out", t("Aunsente")],
@@ -226,13 +238,15 @@ def selection_header_registro(jug_df: pd.DataFrame, comp_df: pd.DataFrame, recor
     # ======================
     with col_turno:
         opciones = list(OPCIONES_TURNO.values())[1:]   # ← excluye la primera opción
-
+        #st.write(opciones)
         turno_traducido = st.selectbox(
             t("Turno"),
             opciones,
-            index=0
+            index=0, #opciones.index(st.session_state.get("turno_select", opciones[0])),
+            key=kb.key("turno_select")
         )
         turno = next(k for k, v in OPCIONES_TURNO.items() if v == turno_traducido)
+        st.session_state["turno_select"] = turno 
 
     # ======================
     # 3. Plantel
@@ -245,6 +259,7 @@ def selection_header_registro(jug_df: pd.DataFrame, comp_df: pd.DataFrame, recor
             format_func=lambda x: x["nombre"] if isinstance(x, dict) else "",
             index=3,
             placeholder=t("Seleccione un plantel"),
+            key=kb.key("plantel_select")
         )
         codigo_comp = comp_select["codigo"]
 
@@ -293,11 +308,12 @@ def selection_header_registro(jug_df: pd.DataFrame, comp_df: pd.DataFrame, recor
             t("Jugadora"),
             options=jugadoras_options,
             format_func=lambda x: x["nombre_jugadora"] if isinstance(x, dict) else "",
-            index=None,
+            index=0,
             placeholder=t("Seleccione una Jugadora"),
+            key=kb.key("jugadora_select")
         )
 
-    return jugadora_opt, tipo, turno
+    return jugadora_opt, tipo, turno, jug_df_filtrado
 
 def get_checkins(records_df, turno: str, fecha):
     """Devuelve array de id_jugadora con CHECK-IN en la fecha y turno indicados."""

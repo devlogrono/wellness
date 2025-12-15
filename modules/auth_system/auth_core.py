@@ -6,8 +6,8 @@ import bcrypt
 import jwt
 import streamlit as st
 
-from auth_system import auth_config
-from auth_system.cookie_manager import cookie_set, cookie_get, cookie_delete
+from modules.auth_system import auth_config
+from .cookie_manager import cookie_set, cookie_get, cookie_delete
 
 # ======================================================
 # Helpers internos de estado

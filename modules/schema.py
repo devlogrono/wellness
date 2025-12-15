@@ -1,5 +1,5 @@
 import datetime
-from i18n.i18n import t
+from modules.i18n.i18n import t
 
 # Diccionario de equivalencias
 MAP_POSICIONES = {

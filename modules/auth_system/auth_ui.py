@@ -1,8 +1,8 @@
 import streamlit as st
-from db.db_login import load_user_from_db
-from auth_system.auth_core import logout, validate_access
-from util.util import right_caption, set_background_image_local
-from i18n.i18n import t, language_selector
+from modules.db.db_login import load_user_from_db
+from modules.auth_system.auth_core import logout, validate_access
+from modules.util.util import right_caption, set_background_image_local
+from modules.i18n.i18n import t, language_selector
 
 def login_view() -> None:
     """Renderiza el formulario de inicio de sesión."""

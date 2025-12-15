@@ -2,9 +2,9 @@ import streamlit as st
 import pandas as pd
 from datetime import date, timedelta
 
-from app_config.styles import WELLNESS_COLOR_NORMAL, WELLNESS_COLOR_INVERTIDO, get_color_wellness
-from util.util import ordenar_df
-from i18n.i18n import t
+from modules.app_config.styles import WELLNESS_COLOR_NORMAL, WELLNESS_COLOR_INVERTIDO, get_color_wellness
+from modules.util.util import ordenar_df
+from modules.i18n.i18n import t
 
 W_COLS = ["recuperacion", "energia", "sueno", "stress", "dolor"]
 

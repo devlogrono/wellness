@@ -1,9 +1,8 @@
 
 import streamlit as st
 import pandas as pd
-from i18n.i18n import t
-from reports.plots_grupales import (plot_carga_semanal, plot_rpe_promedio, tabla_resumen)
-
+from modules.i18n.i18n import t
+from .plots_grupales import (plot_carga_semanal, plot_rpe_promedio, tabla_resumen)
 
 def group_dashboard(df_filtrado: pd.DataFrame):
     """Panel grupal con gráficos y tablas agregadas."""

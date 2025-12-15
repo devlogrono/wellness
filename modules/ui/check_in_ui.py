@@ -2,12 +2,12 @@ import json
 import streamlit as st
 import datetime
 import pandas as pd
-from util.io_files import load_catalog_list
-from db.db_catalogs import load_catalog_list_db
-from schema import DIAS_SEMANA
-from i18n.i18n import t
-from app_config.styles import WELLNESS_COLOR_NORMAL, WELLNESS_COLOR_INVERTIDO
-from util.key_builder import KeyBuilder
+from modules.util.io_files import load_catalog_list
+from modules.db.db_catalogs import load_catalog_list_db
+from modules.schema import DIAS_SEMANA
+from modules.i18n.i18n import t
+from modules.app_config.styles import WELLNESS_COLOR_NORMAL, WELLNESS_COLOR_INVERTIDO
+from modules.util.key_builder import KeyBuilder
 
 def validate_checkin(record: dict) -> tuple[bool, str]:
     # Required 1..5
@@ -71,20 +71,25 @@ def checkin_inputs(record: dict, genero: str):
         c1, c2, c3, c4, c5 = st.columns(5)
         #c1, c2 = st.columns([0.8,4])
         with c1:
-            record["recuperacion"] = st.number_input(t("**Recuperación** :red[:material/arrow_upward_alt:] (:green[**1**] - :red[**5**])"), min_value=1, max_value=5, step=1,
-            help=t("1 = Totalmente recuperado · 5 = Muy mal recuperado")) 
+            record["recuperacion"] = st.number_input(t("**Recuperación** :red[:material/arrow_upward_alt:] (:green[**1**] - :red[**5**])"), 
+                                                     min_value=1, max_value=5, step=1, key=kb.key("recuperacion_input"), 
+                                                     help=t("1 = Totalmente recuperado · 5 = Muy mal recuperado")) 
         with c2:
-            record["fatiga"] = st.number_input(t("**Energía** :red[:material/arrow_upward_alt:] (:green[**1**] - :red[**5**])"), min_value=1, max_value=5, step=1,
-            help=t("1 = Energía Máxima · 5 = Sin Energía")) 
+            record["fatiga"] = st.number_input(t("**Energía** :red[:material/arrow_upward_alt:] (:green[**1**] - :red[**5**])"), 
+                                               min_value=1, max_value=5, step=1, key=kb.key("fatiga_input"), 
+                                               help=t("1 = Energía Máxima · 5 = Sin Energía")) 
         with c3:
-            record["sueno"] = st.number_input(t("**Sueño** :red[:material/arrow_upward_alt:] (:green[**1**] - :red[**5**])"), min_value=1, max_value=5, step=1,
-            help=t("1 = Excelente calidad . 5 = Muy mala calidad")) 
+            record["sueno"] = st.number_input(t("**Sueño** :red[:material/arrow_upward_alt:] (:green[**1**] - :red[**5**])"), 
+                                              min_value=1, max_value=5, step=1, key=kb.key("sueno_input"),
+                                              help=t("1 = Excelente calidad . 5 = Muy mala calidad")) 
         with c4:
-            record["stress"] = st.number_input(t("**Estrés** :red[:material/arrow_upward_alt:] (:green[**1**] - :red[**5**])"), min_value=1, max_value=5, step=1,
-            help=t("1 = Relajado . 5 = Nivel de estrés muy alto")) 
+            record["stress"] = st.number_input(t("**Estrés** :red[:material/arrow_upward_alt:] (:green[**1**] - :red[**5**])"), 
+                                               min_value=1, max_value=5, step=1, key=kb.key("stress_input"),
+                                               help=t("1 = Relajado . 5 = Nivel de estrés muy alto")) 
         with c5:
-            record["dolor"] = st.number_input(t("**Dolor** :red[:material/arrow_upward_alt:] (:green[**1**] - :red[**5**])"), min_value=1, max_value=5, step=1,
-            help=t("1 = Sin dolor . 5 = Dolor severo"))
+            record["dolor"] = st.number_input(t("**Dolor** :red[:material/arrow_upward_alt:] (:green[**1**] - :red[**5**])"), 
+                                              min_value=1, max_value=5, step=1, key=kb.key("dolor_input"), 
+                                              help=t("1 = Sin dolor . 5 = Dolor severo"))
 
         col1, col2, col3 = st.columns([1,2,1])
         # --- Dolor corporal ---
@@ -107,7 +112,9 @@ def checkin_inputs(record: dict, genero: str):
                     zonas_anatomicas_list = []
 
                 zonas_anatomicas_dolor = st.multiselect(
-                    "Estructura anatómica", options=zonas_anatomicas_list, placeholder="Selecciona una o varias partes con dolor"
+                    "Estructura anatómica", options=zonas_anatomicas_list, 
+                    placeholder="Selecciona una o varias partes con dolor",
+                    key=kb.key("anatómica_dolor")
                 )
 
                 if zonas_anatomicas_dolor:
@@ -232,11 +239,7 @@ def checkin_form(record: dict, genero: str) -> tuple[dict, bool, str]:
     """Formulario de Check-in (Wellness pre-entrenamiento) con ICS y periodización táctica adaptativa."""
 
     record, is_valid, msg = checkin_inputs(record, genero)
-    #st.text(record)
-    # Validación
-    #is_valid, msg = validate_checkin(record)
     return record, is_valid, msg
-    #return record, True, "msg"
 
 def mostrar_tabla_referencia_wellness():
     """Tabla de referencia (1-5) con la misma escala para todas las métricas:

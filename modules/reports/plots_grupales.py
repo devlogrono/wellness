@@ -2,8 +2,8 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
-from app_config import styles
-from i18n.i18n import t
+from modules.app_config import styles
+from modules.i18n.i18n import t
 
 # ============================================================
 # 🧭 Función auxiliar de fecha

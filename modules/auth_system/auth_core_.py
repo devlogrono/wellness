@@ -6,7 +6,7 @@ import jwt
 import streamlit as st
 from st_cookies_manager import EncryptedCookieManager
 
-from auth_system import auth_config  # parámetros desde secrets.toml
+from modules.auth_system import auth_config  # parámetros desde secrets.toml
 
 # ============================================================
 # 🔐 GESTOR GLOBAL DE COOKIES (una instancia por app)

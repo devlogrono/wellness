@@ -2,8 +2,8 @@
 import streamlit as st
 import datetime
 import time
-from db.db_records import insert_absence, delete_absences
-from i18n.i18n import t
+from modules.db.db_absences import delete_absences, insert_absence
+from modules.i18n.i18n import t
 
 def get_checkins(records_df, fecha):
     """Devuelve array de id_jugadora con CHECK-IN en la fecha y turno indicados."""

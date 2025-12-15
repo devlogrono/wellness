@@ -2,8 +2,8 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 from .metrics import compute_rpe_metrics, RPEFilters
-from util.util import (get_photo, clean_image_url, calcular_edad)
-from i18n.i18n import t
+from modules.util.util import (get_photo, clean_image_url, calcular_edad)
+from modules.i18n.i18n import t
 
 from .plots_individuales import (
     grafico_rpe_ua,

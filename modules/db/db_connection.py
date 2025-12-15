@@ -9,7 +9,7 @@ def init_connection():
 
     pool = pooling.MySQLConnectionPool(
         pool_name="main_pool",
-        pool_size=5,
+        pool_size=15,
         pool_reset_session=True,
         host=db_config["host"],
         user=db_config["username"],
@@ -24,9 +24,8 @@ def get_connection():
     """Obtiene una conexión activa desde el pool."""
     pool = init_connection()
     try:
-        connection = pool.get_connection()
-        if connection.is_connected():
-            return connection
+        conn = pool.get_connection()
+        return conn
     except mysql.connector.Error as e:
         st.error(f":material/warning: Error al conectar con MySQL: {e}")
         return None
