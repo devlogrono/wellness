@@ -223,7 +223,7 @@ def selection_header_registro(jug_df: pd.DataFrame, comp_df: pd.DataFrame, recor
             t("Tipo de registro"),
             options=opciones_tipo,
             horizontal=True,
-            index=0, #opciones_tipo.index(st.session_state.get("tipo_registro", "Check-in")),
+            index=opciones_tipo.index(st.session_state.get("tipo_registro", "Check-in")),
             key=kb.key("tipo_registro")
         )
         st.session_state["tipo_registro"] = tipo 
@@ -242,7 +242,7 @@ def selection_header_registro(jug_df: pd.DataFrame, comp_df: pd.DataFrame, recor
         turno_traducido = st.selectbox(
             t("Turno"),
             opciones,
-            index=0, #opciones.index(st.session_state.get("turno_select", opciones[0])),
+            index=opciones.index(st.session_state.get("turno_select", opciones[0])),
             key=kb.key("turno_select")
         )
         turno = next(k for k, v in OPCIONES_TURNO.items() if v == turno_traducido)
