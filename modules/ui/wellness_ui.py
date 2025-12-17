@@ -20,6 +20,7 @@ def wellness_form(jugadora, tipo, turno):
         st.info(t("Selecciona una jugadora para continuar."))
         return
     
+   
     # ---------------------------------------
     # 2. Crear record base
     # ---------------------------------------
@@ -52,10 +53,45 @@ def wellness_form(jugadora, tipo, turno):
         # ---- Botón seguro ----
         #submitted = st.form_submit_button(t("Guardar"))
 
+
+    # ===============================
+    # 🔸 Diálogo de confirmación de registro
+    # ===============================
+    @st.dialog(t("Confirmar registro"), width="small")
+    def dialog_confirmar_registro(record, jugadora, tipo):
+        nombre = jugadora["nombre_jugadora"]
+        modo = t("Check-in") if tipo == "Check-in" else t("Check-out")
+
+        st.warning(
+            f"{t('¿Desea confirmar el registro de')} **{modo}** "
+            f"{t('para la jugadora')} **{nombre}**?"
+        )
+
+        _, col2, col3 = st.columns([1.6, 1, 1])
+
+        with col2:
+            if st.button(t(":material/cancel: Cancelar")):
+                st.rerun()
+
+        with col3:
+            if st.button(t(":material/check: Confirmar"), type="primary"):
+                modo_db = "checkin" if tipo == "Check-in" else "checkout"
+                success = upsert_record_db(record, modo_db)
+
+                if success:
+                    st.session_state["submitted"] = True
+                    st.session_state[f"redirect_{st.session_state['client_session_id']}"] = True
+                else:
+                    st.session_state["save_error"] = True
+
+                st.rerun()
+
     # ---------------------------------------
     # 5. Procesamiento del guardado
     # ---------------------------------------
+    #st.dataframe(jugadora)
     if st.button(f":material/save: {t('Guardar')}", key="btn_reg_wellness", disabled=not is_valid):
+        dialog_confirmar_registro(record, jugadora, tipo)
         #preview_record(record)
 
         # ---------------------------------------
@@ -75,17 +111,17 @@ def wellness_form(jugadora, tipo, turno):
         #     st.error(validation_msg)
         #     return
 
-        modo = "checkin" if tipo == "Check-in" else "checkout"
-        success = upsert_record_db(record, modo)
+        # modo = "checkin" if tipo == "Check-in" else "checkout"
+        # success = upsert_record_db(record, modo)
 
-        if success:
-            st.success(t("Registro guardado correctamente."))
-            time.sleep(2)  # Pequeña pausa para mejor UX
-            st.session_state[redirect_key] = True
-            st.session_state["submitted"] = True
-        else:
-            st.error(t("Error al guardar el registro."))
-            return
+        # if success:
+        #     st.success(t("Registro guardado correctamente."))
+        #     time.sleep(2)  # Pequeña pausa para mejor UX
+        #     st.session_state[redirect_key] = True
+        #     st.session_state["submitted"] = True
+        # else:
+        #     st.error(t("Error al guardar el registro."))
+        #     return
 
     # ---------------------------------------
     # 6. Vista de previsualización (solo developers)
@@ -94,6 +130,12 @@ def wellness_form(jugadora, tipo, turno):
         st.divider()
         if st.checkbox(t("Previsualización")):
             preview_record(record)
+
+    if st.session_state.pop("save_error", False):
+        st.error(t("Error al guardar el registro."))
+
+    if st.session_state.get("submitted"):
+        st.success(t("Registro guardado correctamente."))
 
     # ---------------------------------------
     # 7. Redirección segura SOLO para este navegador

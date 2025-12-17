@@ -71,7 +71,8 @@ with tab1:
                 st.rerun()
         with col3:
             if st.button(t(":material/delete: Eliminar"), type="primary"):
-                exito, mensaje = delete_record(ids_seleccionados)
+                deleted_by = st.session_state["auth"]["name"].lower()
+                exito, mensaje = delete_record(ids_seleccionados, deleted_by)
 
                 if exito:
                     # Marcar para recarga
