@@ -304,14 +304,34 @@ def selection_header_registro(jug_df: pd.DataFrame, comp_df: pd.DataFrame, recor
         # -----------------------------
         jugadoras_options = jug_df_filtrado.to_dict("records")
 
+        # ID previamente seleccionado (si existe)
+        last_player_id = st.session_state.get("last_player_id")
+
+        # IDs válidos actualmente
+        ids_disponibles = [str(j["id_jugadora"]) for j in jugadoras_options]
+
+        # Resolver índice seguro
+        if last_player_id in ids_disponibles:
+            selected_index = ids_disponibles.index(last_player_id)
+        else:
+            selected_index = 0 if jugadoras_options else None
+
         jugadora_opt = st.selectbox(
             t("Jugadora"),
             options=jugadoras_options,
             format_func=lambda x: x["nombre_jugadora"] if isinstance(x, dict) else "",
-            index=0,
+            index=selected_index,
             placeholder=t("Seleccione una Jugadora"),
             key=kb.key("jugadora_select")
         )
+
+        # Persistencia en session_state
+        if jugadora_opt:
+            st.session_state["last_player"] = jugadora_opt
+            st.session_state["last_player_id"] = str(jugadora_opt["id_jugadora"])
+        else:
+            st.session_state["last_player"] = None
+            st.session_state["last_player_id"] = None
 
     return jugadora_opt, tipo, turno, jug_df_filtrado
 
