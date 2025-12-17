@@ -214,14 +214,13 @@ def search_existing_record(record):
     rows = query(sql, params)
     return rows[0] if rows else None
 
-def delete_record(ids: list[int]) -> tuple[bool, str]:
+def delete_record(ids: list[int], deleted_by: str) -> tuple[bool, str]:
     """
     Soft-delete: marca registros de wellness como eliminados (estatus_id = 3).
     """
     if not ids:
         return False, "No se proporcionaron IDs de wellness."
 
-    deleted_by = st.session_state["auth"]["username"]
     placeholders = ",".join(["%s"] * len(ids))
 
     sql = f"""
