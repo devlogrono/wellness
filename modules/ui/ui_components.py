@@ -33,7 +33,6 @@ def selection_header(jug_df: pd.DataFrame, comp_df: pd.DataFrame, records_df: pd
 
     # --- Selección de jugadora ---
     with col2:
-        #st.dataframe(jug_df, hide_index=True)
         jugadora_opt = None
         disabled_jugadores = True if modo == "reporte_grupal" else False
 
@@ -41,42 +40,50 @@ def selection_header(jug_df: pd.DataFrame, comp_df: pd.DataFrame, records_df: pd
             codigo_comp = competicion["codigo"]
             jug_df_filtrado = jug_df[jug_df["plantel"] == codigo_comp]
 
-            # IDs estables (NO dicts)
-            jugadora_ids = jug_df_filtrado["nombre_jugadora"].astype(str).tolist()
+            # Nombres estables (strings)
+            jugadora_nombres = (
+                jug_df_filtrado["nombre_jugadora"]
+                .astype(str)
+                .sort_values()
+                .tolist()
+            )
 
-            # Resolver índice según session_state
+            # Resolver índice (permite vacío)
+            jugadora_index = None
             if (
                 "nombre_jugadora" in st.session_state
-                and st.session_state["nombre_jugadora"] in jugadora_ids
+                and st.session_state["nombre_jugadora"] in jugadora_nombres
             ):
-                jugadora_index = jugadora_ids.index(st.session_state["nombre_jugadora"])
-            else:
-                jugadora_index = None
+                jugadora_index = jugadora_nombres.index(
+                    st.session_state["nombre_jugadora"]
+                )
 
-            # Selectbox estable
-            jugadora_id = st.selectbox(
+            jugadora_nombre = st.selectbox(
                 t("Jugadora"),
-                options=jugadora_ids,
-                index=jugadora_index,
+                options=jugadora_nombres,
+                index=jugadora_index,          # None → selector vacío
                 placeholder=t("Seleccione una Jugadora"),
                 disabled=disabled_jugadores,
                 key="jugadora_selector"
             )
 
-            # Persistir selección
-            if jugadora_id:
-                st.session_state["nombre_jugadora"] = jugadora_id
+            # Persistir estado SOLO si hay selección
+            if jugadora_nombre:
+                st.session_state["nombre_jugadora"] = jugadora_nombre
+            else:
+                st.session_state.pop("nombre_jugadora", None)
 
-                # Recuperar objeto completo SOLO aquí
+            # Reconstruir objeto completo solo si hay selección
+            if "nombre_jugadora" in st.session_state:
                 jugadora_opt = jug_df_filtrado[
-                    jug_df_filtrado["nombre_jugadora"].astype(str) == jugadora_id
+                    jug_df_filtrado["nombre_jugadora"].astype(str)
+                    == st.session_state["nombre_jugadora"]
                 ].iloc[0].to_dict()
 
-            # Debug opcional
-            # st.write(jugadora_opt)
-
         else:
-            st.warning(":material/warning: No hay jugadoras cargadas para esta competición.")
+            st.warning(
+                ":material/warning: No hay jugadoras cargadas para esta competición."
+            )
 
     # --- Selección de turno ---
     with col3:
