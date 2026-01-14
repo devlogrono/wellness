@@ -6,7 +6,6 @@ import plotly.graph_objects as go
 import altair as alt
 from modules.i18n.i18n import t
 from modules.app_config.styles import get_color_wellness
-import matplotlib.pyplot as plt
 import pandas as pd
 import plotly.graph_objects as go
 import pandas as pd
