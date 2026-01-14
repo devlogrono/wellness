@@ -50,6 +50,8 @@ def selection_header(jug_df: pd.DataFrame, comp_df: pd.DataFrame, records_df: pd
                 key=kb.key("jugadora_selector")
             )
 
+            st.text(jugadora_opt)
+
             #st.session_state["jugadora_opt"] = jugadora_opt["id_jugadora"] if jugadora_opt else None
         else:
             st.warning(":material/warning: No hay jugadoras cargadas para esta competición.")
